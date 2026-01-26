@@ -8,6 +8,12 @@ version: 0.2
 	- Tolerance value for particle size cutoff
 - this version-log.txt file for version/edit summary
 ==========================================================================
+version: 0.3
+- Fixing tolerance value segmentation parameter to include decimals
+	- in Kasson_Lab_Tool.ijm file, lines 147, 151
+- Fixing video open command to add escaped '' for filepaths with spaces
+	- in video-segmentation.ijm line 38
+==========================================================================
 
 *** Known to-do list:
 	- update linux installation/uninstallation files
