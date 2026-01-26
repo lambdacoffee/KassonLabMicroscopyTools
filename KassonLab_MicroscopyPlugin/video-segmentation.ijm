@@ -34,7 +34,7 @@ for (i=0; i<labels_arr.length; i++) {
 	peak_prominence_param = prominence_arr[i];
 	profile_tolerance_param = parseFloat(tolerance_arr[i]);
 	
-	run("TIFF Virtual Stack...", "open=" + filepaths_arr[i]);
+	run("TIFF Virtual Stack...", "open=\'" + filepaths_arr[i] + "\'");
 	//open(filepaths_arr[i]);
 	//run("Bio-Formats Importer", "open=["+ filepaths_arr[i] +"] autoscale color_mode=Default stack_order=Default");
 	//run("Enhance Contrast", "saturated=0.35");
