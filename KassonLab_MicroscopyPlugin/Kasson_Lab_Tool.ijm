@@ -144,11 +144,11 @@ function setParameters(info_filepath) {
 	// Algo: stop expanding when pixel profile vals < peak val * tolerance.
 	Dialog.createNonBlocking("Set tolerance threshold for particle size determination.");
 	for (i = 0; i < labels_arr.length; i++) {
-		Dialog.addNumber(labels_arr[i] + " tolerance:", 0.1);
+		Dialog.addNumber(labels_arr[i] + " tolerance:", 0.1, 1, 4, ""); // label, default, decimalPlaces, columns, units
 	} Dialog.show();
 	tolerance_arr = newArray(labels_arr.length);
 	for (i = 0; i < tolerance_arr.length; i++) {
-		tolerance_arr[i] = d2s(Dialog.getNumber(),0);
+		tolerance_arr[i] = d2s(Dialog.getNumber(),1);
 	} 
 	
 	// Adding parameters to info.txt file
@@ -181,7 +181,7 @@ function createSubdirs(analysis_pardir) {
 }
 
 function main() {
-	pardir = getDirectory("plugins");
+	pardir = getDirectory("plugins") + "KassonLab_MicroscopyPlugin" + File.separator;
 	help_filepath = pardir + "log" + File.separator + "help.txt";
 	createWelcome(help_filepath);
 	
