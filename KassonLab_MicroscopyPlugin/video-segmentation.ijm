@@ -133,7 +133,8 @@ for (i=0; i<labels_arr.length; i++) {
 		roiManager("rename", d2s(j+1,0));
 	} kept_roi_filepath = dst_subdir + File.separator + "keptBoxes.zip";
 	roiManager("Save", kept_roi_filepath);
-	
+
+	selectImage(vid_id);
 	for (n=1; n<nSlices+1; n++) {
 		setSlice(n);
 		for (p=0; p<roiManager("count"); p++) {
