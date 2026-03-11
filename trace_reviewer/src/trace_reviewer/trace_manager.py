@@ -53,13 +53,13 @@ class TraceManager:
                     except ValueError or IndexError:
                         raise ValueError("{} is either corrupted or in wrong configuration.".format(info_file_path))
                     else:
-                        self.info[key_count] = {header[0]: split_line[0],
-                                                header[1]: int(split_line[1]),
-                                                header[2]: float(split_line[2]),
-                                                header[3]: split_line[3]}
+                        self.info[key_count] = dict()
+                        for i in range(len(header)):
+                            self.info[key_count][header[i]] = split_line[i]
                         key_count += 1
         else:
             raise FileNotFoundError("Info text file cannot be found!")
+        return 0
 
     def get_total_video_intensity(self, datum_key):
         vid_filepath = self.regions[datum_key]["SourcePath"]
@@ -160,15 +160,26 @@ class TraceManager:
                 if datum_key == -1:
                     raise FileNotFoundError("Cannot determine DatumKey value for {}".format(filepath))
                 self.traces[datum_key] = {"SourcePath": filepath, "TraceData": dict()}
-                self.regions[datum_key] = {"SourcePath": self.info[datum_key]["Filepath"], "TraceData": dict(),
+                try:
+                    self.regions[datum_key] = {"SourcePath": self.info[datum_key]["Filepath"], "TraceData": dict(),
                                            "RegionalChangepoints": dict(), "DefocusPoints": set()}
+                except KeyError:
+                    print("No source media filepath found for {} - continue at own risk.".format(self.info[datum_key]["Label"]))
         return 0
 
     def set_start(self):
         for key in self.traces:
-            start_frame = self.info[key]["StartFrame"]
-            for n in self.traces[key]["TraceData"]:
-                self.traces[key]["TraceData"][n].start = start_frame
+            try:
+                start_frame = int(self.info[key]["StartFrame"])
+                self.info[key]["StartFrame"] = start_frame
+                for n in self.traces[key]["TraceData"]:
+                    self.traces[key]["TraceData"][n].start = start_frame
+            except TypeError:
+                raise TypeError("StartFrame value in info.txt file is NOT type int.")
+            try:
+                self.info[key]["TimeInterval[s]"] = float(self.info[key]["TimeInterval[s]"])
+            except TypeError:
+                raise TypeError("TimeInterval[s] value in info.txt file is NOT type float.")
         return 0
 
     def setup(self, user_input):
@@ -183,9 +194,9 @@ class TraceManager:
             if not os.path.exists(self.destinations[key]["Dir"]):
                 os.mkdir(self.destinations[key]["Dir"])
         for datum_key in self.traces:
-            src_filename = os.path.splitext(os.path.split(self.traces[datum_key]["SourcePath"])[-1])[0]
+            label = self.info[datum_key]["Label"]
             for dst_type in self.destinations:
-                dst_filename = src_filename + self.destinations[dst_type]["Tag"] + self.destinations[dst_type]["Ext"]
+                dst_filename = label + self.destinations[dst_type]["Tag"] + self.destinations[dst_type]["Ext"]
                 dst_filepath = os.path.join(self.destinations[dst_type]["Dir"], dst_filename)
                 self.traces[datum_key][self.destinations[dst_type]["Correlation"]] = dst_filepath
 
@@ -221,21 +232,48 @@ class TraceManager:
     def generate_curve(self, key):
         self.results[key] = {"X": [], "Y": []}
         dwell_times = []
+        jumps = []
+        binding_times = []
+        isFusedTimes = []
         for trace_num in self.traces[key]["TraceData"]:
             intensity_trace = self.traces[key]["TraceData"][trace_num]
+            b = intensity_trace.binding * self.info[key]["TimeInterval[s]"]
+            #binding_times.append(b)
             if intensity_trace.isFused and not intensity_trace.isExcluded:
                 if intensity_trace.start == 0:
                     # binding to fuse time
                     t = (intensity_trace.fusionStart - intensity_trace.binding) * self.info[key]["TimeInterval[s]"]
+                    j = intensity_trace.raw[intensity_trace.fusionEnd - 1] - intensity_trace.raw[intensity_trace.fusionStart - 1]
+                    #j = j / intensity_trace.raw[intensity_trace.binding]
                 else:
                     # flow-start to fuse time
-                    t = (intensity_trace.fusionStart - intensity_trace.start) * self.info[key]["TimeInterval[s]"]
+                    t = (intensity_trace.fusionStart - int(intensity_trace.start)) * self.info[key]["TimeInterval[s]"]
+                    j = intensity_trace.raw[intensity_trace.fusionEnd - 1] - intensity_trace.raw[
+                        intensity_trace.fusionStart - 1]
+                    #j = j / intensity_trace.raw[intensity_trace.start]
                 dwell_times.append(t)
+                intensity_trace.dwellTime = t
+                jumps.append(j)
+                binding_times.append(b)
+                #jumps.append(intensity_trace.raw[intensity_trace.fusionEnd - 1] - intensity_trace.raw[intensity_trace.fusionStart - 1])
+        original_dwell_times = dwell_times.copy()
         dwell_times.sort()
+        sorted_jumps = [round(jumps[original_dwell_times.index(i)], 0) for i in original_dwell_times]
+        sorted_binding_times = [round(binding_times[original_dwell_times.index(i)], 0) for i in original_dwell_times]
         y_vals = [(i / len(dwell_times)) for i in range(1, len(dwell_times) + 1)]
         self.results[key]["X"] = dwell_times
         self.results[key]["Y"] = y_vals
+        self.results[key]["Jumps"] = sorted_jumps
+        self.results[key]["Bindings"] = sorted_binding_times
         return 0
+
+    def get_binding_times(self, key):
+        binding_times = []
+        for trace_num in self.traces[key]["TraceData"]:
+            intensity_trace = self.traces[key]["TraceData"][trace_num]
+            binding_times.append(intensity_trace.binding * self.info[key]["TimeInterval[s]"])
+        binding_times.sort()
+        return binding_times
 
     def generate_curve_from_changepoints(self, key):
         self.results[key] = {"X": [], "Y": []}
@@ -253,20 +291,30 @@ class TraceManager:
                     intensity_trace.fusionEnd = intensity_trace.changepoints[1]
                     t = (intensity_trace.fusionStart - intensity_trace.binding) * self.info[key]["TimeInterval[s]"]
                     dwell_times.append(t)
+                    intensity_trace.dwellTime = t
             else:
                 # flow-start to fuse time
                 if len(intensity_trace.changepoints) > 1:
                     intensity_trace.isFused = True
                     intensity_trace.fusionStart = intensity_trace.changepoints[0]
                     intensity_trace.fusionEnd = intensity_trace.changepoints[0]
-                    t = (intensity_trace.fusionStart - intensity_trace.start) * self.info[key]["TimeInterval[s]"]
+                    t = (intensity_trace.fusionStart - int(intensity_trace.start)) * self.info[key]["TimeInterval[s]"]
                     dwell_times.append(t)
+                    intensity_trace.dwellTime = t
             self.traces[key]["TraceData"][trace_num] = intensity_trace
         dwell_times.sort()
         y_vals = [(i / len(dwell_times)) for i in range(1, len(dwell_times) + 1)]
         self.results[key]["X"] = dwell_times
         self.results[key]["Y"] = y_vals
         return 0
+
+    def get_fusion_interval_intensity_jumps(self, key):
+        jumps = dict()
+        for trace_num in self.traces[key]["TraceData"]:
+            intensity_trace = self.traces[key]["TraceData"][trace_num]
+            if intensity_trace.isFused:
+                jumps[trace_num] = intensity_trace.raw[intensity_trace.fusionEnd - 1] - intensity_trace.raw[intensity_trace.fusionStart - 1]
+        return jumps
 
     def record_dwell_times(self, datum_key):
         dst_path = self.traces[datum_key][self.destinations["Times"]["Correlation"]]
@@ -291,6 +339,13 @@ class TraceManager:
         self.results[key]["Y"] = y_vals
         return 0
 
+    def get_count(self, key):
+        """Returns number of particles reviewed & not excluded. Used to generate efficiency as denominator."""
+        count = sum([1 if self.traces[key]["TraceData"][n].isReviewed and not self.traces[key]["TraceData"][n].isExcluded
+                 else 0 for n in self.traces[key]["TraceData"]])
+        count = count if count > 0 else 1
+        return count
+
 
 class IntensityTrace:
 
@@ -307,6 +362,7 @@ class IntensityTrace:
         self.fusionStart = 0
         self.fusionEnd = 0
         self.binding = 0
+        self.dwellTime = 0
         self.color = "black"
         self.start_color = "tab:blue"
         self.decomposition = {"Trend": [], "Seasonality": [], "Residuals": []}
