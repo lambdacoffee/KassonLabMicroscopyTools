@@ -13,16 +13,19 @@ function createWelcome(help_filepath) {
 	return 0;
 }
 
-function err(error_code) {
-	/*
-	 * Catch-all function for error handling.
-	 */
-	if (error_code == -1) {
-		message = "FATAL ERROR: Unsupported File Type!";
-	} else if (error_code == -11) {
-		message = "FATAL CODE ERROR - function arrGet() has been incorrectly fed!";
-	} message += "\nTERMINATING SEQUENCE - abort process...";
-	exit(message);
+function createInstructions() {
+	Dialog.createNonBlocking("Instructions");
+	Dialog.addMessage("You will be taken through 6 menus where you can:\n");
+	Dialog.setInsets(5, 50, 5);
+	instructions = "- add video files to analyze and label them\n";
+	instructions += "- add the starting frame for analysis of dwell times\n";
+	instructions += "- add the aquistion rate for calculation of dwell times\n";
+	instructions += "- adjust the rolling radius size for background subtraction\n";
+	instructions += "- adjust the particle peak prominence values for segmentation\n";
+	instructions += "- adjust the tolerance for determining particle sizes\n";
+	Dialog.addMessage(instructions);
+	Dialog.show();
+	return 0;
 }
 
 function arrGet(array, arg) {
@@ -184,18 +187,7 @@ function main() {
 	pardir = getDirectory("plugins") + "KassonLab_MicroscopyPlugin" + File.separator;
 	help_filepath = pardir + "log" + File.separator + "help.txt";
 	createWelcome(help_filepath);
-	
-	Dialog.createNonBlocking("Instructions");
-	Dialog.addMessage("You will be taken through 6 menus where you can:\n");
-	Dialog.setInsets(5, 50, 5);
-	instructions = "- add video files to analyze and label them\n";
-	instructions += "- add the starting frame for analysis of dwell times\n";
-	instructions += "- add the aquistion rate for calculation of dwell times\n";
-	instructions += "- adjust the rolling radius size for background subtraction\n";
-	instructions += "- adjust the particle peak prominence values for segmentation\n";
-	instructions += "- adjust the tolerance for determining particle sizes\n";
-	Dialog.addMessage(instructions);
-	Dialog.show();
+	createInstructions();	
 	
 	analysis_parent_directory = getDirectory("Please select directory for analysis destination...");	// trailing file separator
 	
