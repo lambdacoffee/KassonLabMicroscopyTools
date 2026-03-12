@@ -1,48 +1,75 @@
 <html>
 
-<p>Kasson Lab Plugin Extension - {Lipid Viral Analysis}</p>
+<p>Kasson Lab Microscopy Tool Plugin for Fiji</p>
 
 <p>-----------------------------------------------------------------------------------------------------------------------</p>
 
 <p>[User Guide]</p>
 
-<p>// INTRO:<br>
-// <br>
-// This combines Fiji (Fiji Is Just ImageJ) &amp; MATLAB into a cohesive plugin for use in automated <br>
-// processing of lipid-viral experimental data. The MATLAB portion of this extension was created<br>
-// primarily by Robert (Bob) Rawle, Ph.D., and the functionality was extended to allow interface<br>
-// with the Fiji environment.<br>
-//<br>
-// Before beginning, a ensure that source data (taken from microscope) meets the established<br>
-// conventional standard. This includes a formal structure with required files &amp; information.<br>
-// All source data must be contained within a single top-level directory as is shown below.<br>
-// In addition, the contents of the summary.txt file are also important - this is discussed<br>
-// below, or the User can simply modify the summaryTEMPLATE.txt file that was provided. <br>
-//<br>
-// - TopLevelDirectory-SrcData<br>
-// --------- summary.txt<br>
-// --------- Subdirectory_Datum-1<br>
-// --------------- Subdirectory_DescriptiveName_LiposomeColorChannel<br>
-// ----------------------- Pos0<br>
-// ------------------------------- img_0000000_Default_000.tif {optional}<br>
-// ------------------------------- metadata.txt {optional}<br>
-// --------------- Subdirectory_DescriptiveName_VirusColorChannel<br>
-// ----------------------- DescriptiveName_VirusColorChannel_Video.tif<br>
-// --------- Subdirectory_Datum-2<br>
-// --------------- Subdirectory_DescriptiveName_LiposomeColorChannel<br>
-// ----------------------- Pos0<br>
-// ------------------------------- img_0000000_Default_000.tif {optional}<br>
-// ------------------------------- metadata.txt {optional}<br>
-// --------------- Subdirectory_DescriptiveName_VirusColorChannel<br>
-// ----------------------- DescriptiveName_VirusColorChannel_Video.tif<br>
-// --------- Subdirectory_Datum-3<br>
-// --------------- Subdirectory_DescriptiveName_LiposomeColorChannel<br>
-// ----------------------- Pos0<br>
-// ------------------------------- img_0000000_Default_000.tif {optional}<br>
-// ------------------------------- metadata.txt {optional}<br>
-// --------------- Subdirectory_DescriptiveName_VirusColorChannel<br>
-// ----------------------- DescriptiveName_VirusColorChannel_Video.tif</p>
-
+<p>
+// This pipeline contains 2 environments: 1 in Fiji, the other in Python3.<br>
+// Before beginning, make sure that your videos don't have severe translational drift.<br>
+// If they do, try and fix by using F4DR in Fiji (very good drift correction https://imagej.net/plugins/fast4dreg).<br>
+// Create an empty directory. This will be the parent analysis directory where everything gets dumped into.<br>
+// You can open videos one at a time & run Sneak Peek (in Fiji, open and navigate to Plugins/KassonLab MicroscopyPlugin/Sneak Peek) <br>
+// This will allow you to run the segmentation algorithm without continuing and extracting traces.<br>
+// You can use this to optimize the hyperparamters & note them down for use in the pipeline.<br>
+ <br>
+// These parameter values are usually a good place to start:<br>
+// &#9 - Rolling ball radius = 3<br>
+// &#9 - Prominence = 1000<br>
+// &#9 - Tolerance = 0.1 (I would NOT go higher than 0.5)<br>
+// &#9 - Revert image to original = 1 (this resets the video, ready to go again).<br>
+ <br>
+// To continue & fully run with the image segmentation, in Fiji, run Plugins/KassonLab MicroscopyPlugin/Kasson Tool <br>
+// Acknowledge the welcome box & instructions (this file is there as a help button!).<br>
+// The first directory selector box will ask you for the parent analysis directory - this is the one you created earlier.<br>
+// The next file selector box will ask you for at least 1 video file.<br>
+// You can then add the subsequent video files, &amp even give them a nice label<br>
+// &#9alphanumeric and "-" characters only!!<br>
+// Proceed when all videos are added & plop in the values you obtained from running Sneak Peek.<br>
+// You should also know the acquistion rate &amp the starting frame for each video.<br>
+// The starting frame should be 0 if you are measuring binding & fusion.<br>
+// If you are only measuring fusion (so particles are already bound when imaging starts),<br>
+//  &#9 keep note of when the pump was started!<br>
+// Let it run! Time for tea/coffee break, you have earned it! :)<br>
+ <br>
+// Proceed to a terminal instance & use command:<br>
+<br>
+&#9python -m trace_reviewer ".\path\to\parent_analysis_dir"<br>
+<br>
+// You have options here, you can run the changepoints algorithm to identify prominent changepoints in the intensity traces if you want.<br>
+// Regardless, to begin manually reviewing intensity traces, select number next to the video that you want to review.<br>
+ <br>
+// Use "h" flag to display options:<br>
+// &#9 - h is help flag, displays a helpful message.<br>
+// &#9 - i is invert flag, inverts the colors - useful for switching between day/night mode.<br>
+// &#9 - a is arrange flag, this will arrange the figure panel to a mxn configuration.<br>
+//  &#9&#9 You will be prompted for the numbers separated by a space, so a 4x3 grid will be "4 3".<br>
+// &#9 - s is save flag, this must be used if you want to actually save your data!.<br>
+// &#9&#9 Saving will write all information to ./parent_analysis/FusionOutput/Label?FusionOutput.txt,<br>
+// &#9&#9 as well as how far you have reviewed the traces, so you can stop at any time &amp return.<br>
+// &#9 - r is resume flag, resumes where you left off at if you save, exit, &amp return.<br>
+// &#9 - f is fusion flag, prompts you for entering the trace# to mark as fused.<br>
+// &#9&#9  To actually mark the points, an enlarged single trace will appear. You can manipulate<br>
+// &#9&#9  (zoom) the trace however you wish.<br>
+// &#9&#9  To fully mark as fusion, press any key (such as spacebar) when ready, and you will be prompted for<br>
+// &#9&#9  2 (or 3, if binding) points to select on the trace.<br>
+// &#9&#9  The corresponding frame numbers will be recorded and printed in the terminal.<br>
+// &#9&#9  The trace color will also change.<br>
+// &#9 - x is exclude flag, exclude this trace from further consideration, but keep it there as a placeholder. Trace will change color.<br>
+// &#9 - c is toggle changepoints flag, toggles display for changepoints that were found if you ran the changepoint finder algorithm in the initial prompt.<br>
+// &#9 - u is undo flag, prompts for a trace#, then undos &amp resets the trace (useful if you make a mistake).<br>
+// &#9 - q is quit flag, just quit, that's it! Make sure you saved!!!<br>
+ <br>
+// At the end of the figure panel, make sure to save - double check by looking at the corresponding FusionOutput.txt file.<br>
+// Quit by using q flag. You can now move on to other videos.<br>
+// Keep at it, &amp go through all the videos you want.<br>
+// At the very end, you can use "e" flag in the initial prompt to generate eCDFs and gamma distribution fits with parameters.<br>
+// You can also use "j" flag to draw all the reviewed traces as figure panels for posterity!<br>
+ <br>
+// You can open Fiji and run Plugins/KassonLab MicroscopyPlugin/boxification to take all the particle boxes &amp color them according to the review.<br>
+// They will appear as yellow (unfused), cyan (fused), &amp red (excluded).<br>
 <p>// {fin}</p>
 
 </html>
