@@ -1,5 +1,11 @@
-
+/*
+ * This script serves as the entry point for image segementation of the KLMT pipeline.
+ */
+ 
 function createWelcome(help_filepath) {
+	/*
+ 	 * Create welcoming dialog box with message.
+ 	 */
 	help_txt = File.openAsString(help_filepath);
 	title = "Welcome!";
 	Dialog.createNonBlocking(title);
@@ -14,6 +20,9 @@ function createWelcome(help_filepath) {
 }
 
 function createInstructions() {
+	/*
+ 	 * Create dialog box to give instructions..
+ 	 */
 	Dialog.createNonBlocking("Instructions");
 	Dialog.addMessage("You will be taken through 6 menus where you can:\n");
 	Dialog.setInsets(5, 50, 5);
@@ -37,7 +46,13 @@ function arrGet(array, arg) {
 	} return -1;
 }
 
-function getSourceFiles(analysis_pardir) {	
+function getSourceFiles(analysis_pardir) {
+	/*
+ 	 * Create  dialog box to allow User to pick and label video files to analyze.
+ 	 * Takes labels & filepaths, organizes them & creates & prints to ./analysis_pardir/info.txt
+ 	 * Returns ./filepath/to/analysis_pardir/info.txt
+ 	 */
+ 	 
 	instructions = "Select an option below.\nYou can change the unique data label too.\n";
 	instructions += "Only alphanumeric characters and hypen '-' allowed!";
 	source_filepaths_arr = newArray();
