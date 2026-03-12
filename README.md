@@ -41,6 +41,7 @@ INSTALLATION (manual)
 
 WORKFLOW - QUICK GUIDE - [see UserGuide for more details]
 
+- Fix any translational drift in the videos with F4DR (Fast4DReg) plugin for Fiji: https://imagej.net/plugins/fast4dreg
 - Create an empty directory. This will be the parent analysis directory where everything gets dumped into.
 - You can open your videos one at a time & run Sneak Peek (in Fiji, open and navigate to Plugins/KassonLab MicroscopyPlugin/Sneak Peek)
   - This will give you an idea of what to expect for each video segmentation, you can save the parameters in a text file to input later
