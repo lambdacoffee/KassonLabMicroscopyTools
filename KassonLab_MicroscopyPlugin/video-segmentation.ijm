@@ -4,7 +4,6 @@
  * created and applies the correlating values to the segmentation process for each
  * video.
  */
- 
 info_filepath = getArgument();
 text = File.openAsString(info_filepath);
 text_lines = split(text, "\n");
@@ -35,24 +34,16 @@ for (i=0; i<labels_arr.length; i++) {
 	peak_prominence_param = prominence_arr[i];
 	profile_tolerance_param = parseFloat(tolerance_arr[i]);
 	
-	run("TIFF Virtual Stack...", "open=" + filepaths_arr[i]);
-	//open(filepaths_arr[i]);
-	//run("Bio-Formats Importer", "open=["+ filepaths_arr[i] +"] autoscale color_mode=Default stack_order=Default");
-	//run("Enhance Contrast", "saturated=0.35");
+	run("TIFF Virtual Stack...", "open=\'" + filepaths_arr[i] + "\'");
 	vid_id = getImageID();
 	Image.removeScale();
 	run("Subtract Background...", "rolling=" + rolling_background_param);
 	run("Z Project...", "projection=[Sum Slices]");
-	// run("Z Project...", "stop=4 projection=[Max Intensity]");	// for photobleaching
 	median_id = getImageID();
 	setOption("ScaleConversions", true);
 	run("16-bit");
-	//run("Enhance Contrast...", "saturated=0.35 normalize");
-	
-	// run("Subtract Background...", "rolling=5");	// for photobleaching
 	
 	run("Find Maxima...", "prominence=" + peak_prominence_param + " output=[Single Points]");
-	// run("Find Maxima...", "prominence=50 output=[Single Points]");	// for photobleaching
 	peaks_bin_id = getImageID();
 	run("Analyze Particles...", "pixel add");
 	roiManager("Show All without labels");
@@ -87,8 +78,6 @@ for (i=0; i<labels_arr.length; i++) {
 			if (j != 0) {
 				profile_arr = getProfile();
 				Array.getStatistics(profile_arr, min, max, mean, stdDev);
-				// if (profile_arr[0] < peak_val / 2 || profile_arr[profile_arr.length-1] < peak_val / 2 || profile_arr[0] >= peak_val || profile_arr[profile_arr.length-1] >= peak_val) {
-				// if (profile_arr[0] < peak_val * 0.01 || profile_arr[profile_arr.length-1] < peak_val * 0.01 || profile_arr[0] >= peak_val || profile_arr[profile_arr.length-1] >= peak_val) {
 				if (profile_arr[0] < max * profile_tolerance_param || profile_arr[profile_arr.length-1] < max * profile_tolerance_param || profile_arr[0] >= profile_arr[1] || profile_arr[profile_arr.length-1] >= profile_arr[profile_arr.length-2]) {
 					break;
 				} if (j > 12) {break;}
@@ -116,15 +105,6 @@ for (i=0; i<labels_arr.length; i++) {
 	selectWindow("Results");
 	run("Close");
 	
-	selectImage(vid_id);
-	close("\\Others");
-	run("Set Measurements...", "area bounding redirect=None decimal=3");
-	selectWindow("ROI Manager");
-	run("Select All");
-	roiManager("Measure");
-	saveAs("Results", dst_subdir + File.separator + "particles.csv");
-	run("Close");
-	
 	selectWindow("ROI Manager");
 	if (bad_particle_idx.length >= 1) {
 	roiManager("select", bad_particle_idx);
@@ -135,6 +115,15 @@ for (i=0; i<labels_arr.length; i++) {
 	} kept_roi_filepath = dst_subdir + File.separator + "keptBoxes.zip";
 	roiManager("Save", kept_roi_filepath);
 	
+	run("Set Measurements...", "area bounding redirect=None decimal=3");
+	selectWindow("ROI Manager");
+	roiManager("select", Array.getSequence(roiManager("count")));
+	roiManager("Measure");
+	saveAs("Results", dst_subdir + File.separator + "particles.csv");
+	run("Close");
+	
+	selectImage(vid_id);
+	run("Subtract Background...", "rolling=" + rolling_background_param);
 	for (n=1; n<nSlices+1; n++) {
 		setSlice(n);
 		for (p=0; p<roiManager("count"); p++) {
@@ -154,7 +143,7 @@ for (i=0; i<labels_arr.length; i++) {
 		Array.getStatistics(profile_vals_arr, min, max, mean, stdDev);
 		sum_vals = mean * profile_vals_arr.length;
 		setResult(d2s(p+1,0), 0, sum_vals);
-	} // do not delet the preceding block!
+	} // do not delete the preceding block!
 	
 	updateResults();
 	for (j=0; j<roiManager("count"); j++) {
